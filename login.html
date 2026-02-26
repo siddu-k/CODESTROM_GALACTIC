@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic AI | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #030508;
+            color: #f1f5f9;
+            font-family: 'Inter', system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* === LEFT PANEL === */
+        .panel-left {
+            width: 62%;
+            height: 100vh;
+            position: relative;
+            background: #050505;
+            overflow: hidden;
+        }
+
+        .panel-left iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: none;
+        }
+
+        .panel-left-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 5;
+            padding: 3rem 2.5rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* === RIGHT PANEL === */
+        .panel-right {
+            width: 38%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0b1120;
+            position: relative;
+            padding: 3rem;
+        }
+
+        .panel-right::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 30% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .panel-right::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, rgba(139, 92, 246, 0.25), rgba(59, 130, 246, 0.25), transparent);
+            pointer-events: none;
+        }
+
+        /* Form */
+        .form-wrapper {
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 0.75rem;
+            padding: 0.8rem 1rem;
+            color: #f1f5f9;
+            font-size: 0.8rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-field::placeholder {
+            color: #475569;
+        }
+
+        .input-field:focus {
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.85rem;
+            background: linear-gradient(135deg, #7c3aed, #3b82f6);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(124, 58, 237, 0.25);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-google:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(148, 163, 184, 0.25);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.25rem 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(148, 163, 184, 0.1);
+        }
+
+        .tab-btn {
+            padding: 0.45rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .tab-btn.active {
+            background: rgba(124, 58, 237, 0.2);
+            color: #c4b5fd;
+            border: 1px solid rgba(139, 92, 246, 0.25);
+        }
+
+        .tab-btn.inactive {
+            background: transparent;
+            color: #475569;
+            border: 1px solid transparent;
+        }
+
+        .tab-btn.inactive:hover {
+            color: #94a3b8;
+        }
+
+        .error-msg {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            padding: 0.6rem 0.8rem;
+            border-radius: 0.75rem;
+            font-size: 0.7rem;
+            display: none;
+            margin-bottom: 1rem;
+        }
+
+        .success-msg {
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            color: #86efac;
+            padding: 0.6rem 0.8rem;
+            border-radius: 0.75rem;
+            font-size: 0.7rem;
+            display: none;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-wrapper {
+            animation: fadeInUp 0.7s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .panel-left {
+                width: 100%;
+                height: 35vh;
+            }
+
+            .panel-right {
+                width: 100%;
+                height: 65vh;
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ====== LEFT PANEL — Spacecraft in iframe (fully isolated) ====== -->
+    <div class="panel-left">
+        <iframe src="spacecraft-preview.html" title="Spacecraft"></iframe>
+        <div class="panel-left-overlay">
+            <h2 class="text-3xl font-extrabold text-white mb-2 tracking-tight">GALACTIC <span
+                    class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">AI</span></h2>
+            <p class="text-slate-400 text-xs leading-relaxed">Explore the cosmos with intelligence.<br>Powered by Google
+                Gemini.</p>
+        </div>
+    </div>
+
+    <!-- ====== RIGHT PANEL — Login Form ====== -->
+    <div class="panel-right">
+        <div class="form-wrapper">
+            <div class="text-center mb-8">
+                <div
+                    class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20 mb-4">
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4">
+                        </path>
+                    </svg>
+                </div>
+                <h1 class="text-xl font-bold text-white tracking-tight">Welcome Back</h1>
+                <p class="text-xs text-slate-500 mt-1">Sign in to your Galactic AI account</p>
+            </div>
+
+            <div class="flex justify-center gap-2 mb-6">
+                <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+                <button class="tab-btn inactive" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+            </div>
+
+            <div class="error-msg" id="error-msg"></div>
+            <div class="success-msg" id="success-msg"></div>
+
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="mb-4">
+                    <label
+                        class="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Email</label>
+                    <input type="email" id="login-email" class="input-field" placeholder="you@example.com" required>
+                </div>
+                <div class="mb-5">
+                    <label
+                        class="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Password</label>
+                    <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary mb-3" id="login-btn">Sign In</button>
+                <div class="divider"><span
+                        class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">or</span></div>
+                <button type="button" class="btn-google" onclick="handleGoogleLogin()">
+                    <svg width="16" height="16" viewBox="0 0 24 24">
+                        <path fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                        <path fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                        <path fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    Continue with Google
+                </button>
+                <p class="text-center text-[10px] text-slate-500 mt-5">
+                    <a href="#" onclick="switchTab('signup'); return false;"
+                        class="text-purple-400 hover:text-purple-300 transition-colors">Don't have an account? Sign
+                        up</a>
+                </p>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" style="display: none;" onsubmit="handleSignup(event)">
+                <div class="mb-3">
+                    <label class="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Full
+                        Name</label>
+                    <input type="text" id="signup-name" class="input-field" placeholder="John Doe" required>
+                </div>
+                <div class="mb-3">
+                    <label
+                        class="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Email</label>
+                    <input type="email" id="signup-email" class="input-field" placeholder="you@example.com" required>
+                </div>
+                <div class="mb-3">
+                    <label
+                        class="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Password</label>
+                    <input type="password" id="signup-password" class="input-field" placeholder="Min 6 characters"
+                        required minlength="6">
+                </div>
+                <div class="mb-5">
+                    <label class="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Confirm
+                        Password</label>
+                    <input type="password" id="signup-confirm" class="input-field" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary mb-3" id="signup-btn">Create Account</button>
+                <p class="text-center text-[10px] text-slate-500 mt-4">
+                    <a href="#" onclick="switchTab('login'); return false;"
+                        class="text-purple-400 hover:text-purple-300 transition-colors">Already have an account? Sign
+                        in</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        function switchTab(tab) {
+            document.getElementById('error-msg').style.display = 'none';
+            document.getElementById('success-msg').style.display = 'none';
+            if (tab === 'login') {
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('signup-form').style.display = 'none';
+                document.getElementById('tab-login').className = 'tab-btn active';
+                document.getElementById('tab-signup').className = 'tab-btn inactive';
+            } else {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('signup-form').style.display = 'block';
+                document.getElementById('tab-login').className = 'tab-btn inactive';
+                document.getElementById('tab-signup').className = 'tab-btn active';
+            }
+        }
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.textContent = msg; el.style.display = 'block';
+            document.getElementById('success-msg').style.display = 'none';
+        }
+        function showSuccess(msg) {
+            const el = document.getElementById('success-msg');
+            el.textContent = msg; el.style.display = 'block';
+            document.getElementById('error-msg').style.display = 'none';
+        }
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('login-btn');
+            btn.textContent = 'Signing in...'; btn.disabled = true;
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showSuccess('Login successful! Redirecting...');
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } catch (error) {
+                showError(getErrorMessage(error.code));
+                btn.textContent = 'Sign In'; btn.disabled = false;
+            }
+        }
+        async function handleSignup(e) {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirm = document.getElementById('signup-confirm').value;
+            const btn = document.getElementById('signup-btn');
+            if (password !== confirm) { showError('Passwords do not match.'); return; }
+            btn.textContent = 'Creating account...'; btn.disabled = true;
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await cred.user.updateProfile({ displayName: name });
+                await db.collection('users').doc(cred.user.uid).set({
+                    displayName: name, email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    geminiApiKey: '', geminiModel: 'gemini-3-flash-preview'
+                });
+                showSuccess('Account created! Redirecting...');
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } catch (error) {
+                showError(getErrorMessage(error.code));
+                btn.textContent = 'Create Account'; btn.disabled = false;
+            }
+        }
+        async function handleGoogleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                const docRef = db.collection('users').doc(user.uid);
+                const doc = await docRef.get();
+                if (!doc.exists) {
+                    await docRef.set({
+                        displayName: user.displayName || '', email: user.email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        geminiApiKey: '', geminiModel: 'gemini-3-flash-preview'
+                    });
+                }
+                showSuccess('Login successful! Redirecting...');
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } catch (error) {
+                if (error.code !== 'auth/popup-closed-by-user') showError(getErrorMessage(error.code));
+            }
+        }
+        function getErrorMessage(code) {
+            switch (code) {
+                case 'auth/user-not-found': return 'No account found with this email.';
+                case 'auth/wrong-password': return 'Incorrect password.';
+                case 'auth/email-already-in-use': return 'An account with this email already exists.';
+                case 'auth/weak-password': return 'Password must be at least 6 characters.';
+                case 'auth/invalid-email': return 'Please enter a valid email address.';
+                case 'auth/too-many-requests': return 'Too many attempts. Try again later.';
+                case 'auth/popup-closed-by-user': return 'Google sign-in was cancelled.';
+                case 'auth/invalid-credential': return 'Invalid email or password.';
+                default: return 'Something went wrong. Please try again.';
+            }
+        }
+        auth.onAuthStateChanged(user => { if (user) window.location.href = 'dashboard.html'; });
+    </script>
+</body>
+
+</html>

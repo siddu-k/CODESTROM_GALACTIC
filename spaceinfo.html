@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic AI | Solar System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Post Processing -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Gemini SDK -->
+    <script type="importmap">
+    {
+        "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+    }
+    </script>
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        window.GoogleGenerativeAI = GoogleGenerativeAI;
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Inter', sans-serif;
+            color: white;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .glass-ui {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .planet-label {
+            position: absolute;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            pointer-events: none;
+            text-shadow: 0 0 5px black;
+            opacity: 0.7;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Intro Overlay -->
+    <div id="intro-overlay"
+        class="absolute inset-0 z-50 flex items-center justify-center bg-black/80 transition-opacity duration-1000">
+        <div class="text-center">
+            <h1 class="text-6xl md:text-8xl font-black text-white tracking-tighter mb-4 animate-pulse">GALACTIC CORE
+            </h1>
+            <p class="text-blue-400 text-sm md:text-lg tracking-[0.5em] uppercase mb-8">System Initialization Required
+            </p>
+            <button onclick="startJourney()"
+                class="group relative px-8 py-4 bg-transparent overflow-hidden rounded-full transition-transform hover:scale-105">
+                <div class="absolute inset-0 border border-blue-500 rounded-full"></div>
+                <div
+                    class="absolute inset-0 w-0 bg-blue-500 transition-all duration-[250ms] ease-out group-hover:w-full opacity-20">
+                </div>
+                <span
+                    class="relative text-white font-bold tracking-widest uppercase group-hover:text-cyan-200 transition-colors">Enter
+                    Solar System</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay (Hidden initially) -->
+    <div id="main-ui" class="absolute inset-0 z-10 pointer-events-none opacity-0 transition-opacity duration-1000">
+
+        <!-- Header -->
+        <div class="absolute top-0 left-0 p-8 w-full flex justify-between items-start pointer-events-none">
+            <div class="pointer-events-auto">
+                <a href="dashboard.html"
+                    class="flex items-center gap-2 text-xs text-blue-400 font-bold tracking-widest uppercase hover:text-white transition-colors mb-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    Return to Bridge
+                </a>
+                <h1 class="text-4xl font-black text-white tracking-tighter">SOLAR SIMULATION</h1>
+            </div>
+
+            <div class="glass-ui p-4 rounded-xl text-right hidden md:block pointer-events-auto flex items-center gap-4">
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest mb-1">System Status</p>
+                    <p class="text-blue-400 font-bold text-sm">REAL-TIME ORBITAL MECHANICS</p>
+                </div>
+                <!-- Planet Selection Dropdown -->
+                <div class="mt-3 text-left border-t border-white/10 pt-3 flex items-center justify-between">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest mr-3">Focus:</span>
+                    <select id="planet-selector" onchange="onPlanetDropdownSelect(this.value)"
+                        class="bg-black/40 border border-blue-500/30 text-white text-xs font-mono rounded px-2 py-1 outline-none focus:border-blue-400 cursor-pointer glass-select transition-colors w-32">
+                        <option value="">-- Select --</option>
+                        <option value="The Sun">The Sun</option>
+                        <option value="Mercury">Mercury</option>
+                        <option value="Venus">Venus</option>
+                        <option value="Earth">Earth</option>
+                        <option value="Mars">Mars</option>
+                        <option value="Jupiter">Jupiter</option>
+                        <option value="Saturn">Saturn</option>
+                        <option value="Uranus">Uranus</option>
+                        <option value="Neptune">Neptune</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel (Bottom) -->
+        <div id="info-panel"
+            class="absolute bottom-4 left-4 right-4 md:left-8 md:right-auto md:bottom-8 md:w-full md:max-w-sm p-4 md:p-6 glass-ui rounded-2xl pointer-events-auto transition-all duration-500 translate-y-[150%] opacity-0 border border-blue-500/20 shadow-2xl shadow-blue-900/20">
+            <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                <div>
+                    <h2 id="p-name"
+                        class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300 uppercase tracking-tighter">
+                        PLANET</h2>
+                    <div class="text-[9px] text-blue-400 font-bold tracking-[0.2em] uppercase">System Body</div>
+                </div>
+                <div
+                    class="text-[10px] text-slate-400 font-mono tracking-widest border border-slate-600/50 bg-black/20 px-2 py-1 rounded">
+                    TYPE: <span id="p-type" class="text-white font-bold">TYPE</span>
+                </div>
+            </div>
+
+            <p id="p-desc" class="text-xs text-slate-300 leading-relaxed mb-5 border-l-2 border-blue-500/50 pl-3">
+                Description goes here.</p>
+
+            <div class="grid grid-cols-2 gap-2 text-[10px]">
+                <div class="bg-white/5 p-2 rounded border border-white/5">
+                    <span class="text-slate-500 block mb-0.5 uppercase tracking-wider text-[9px]">Orbital Period</span>
+                    <span id="p-year" class="text-white font-bold font-mono text-xs">--</span>
+                </div>
+                <div class="bg-white/5 p-2 rounded border border-white/5">
+                    <span class="text-slate-500 block mb-0.5 uppercase tracking-wider text-[9px]">Radius</span>
+                    <span id="p-radius" class="text-white font-bold font-mono text-xs">--</span>
+                </div>
+                <div class="bg-white/5 p-2 rounded border border-white/5">
+                    <span class="text-slate-500 block mb-0.5 uppercase tracking-wider text-[9px]">Avg Temp</span>
+                    <span id="p-temp" class="text-white font-bold font-mono text-xs">--</span>
+                </div>
+                <div class="bg-white/5 p-2 rounded border border-white/5">
+                    <span class="text-slate-500 block mb-0.5 uppercase tracking-wider text-[9px]">Gravity</span>
+                    <span id="p-gravity" class="text-white font-bold font-mono text-xs">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Hint -->
+        <div class="absolute bottom-8 right-8 text-right pointer-events-auto">
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Navigation</p>
+            <div class="flex gap-2">
+                <button onclick="resetCamera()" class="p-3 glass-ui rounded-full hover:bg-white/10 transition-colors"
+                    title="Reset View">
+                    <i data-lucide="crosshair" class="w-5 h-5 text-white"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- COSMIC ASSISTANT SIDEBAR -->
+    <aside id="chat-sidebar"
+        class="absolute top-0 right-0 h-full w-full md:w-96 transform translate-x-full transition-transform duration-500 ease-in-out z-40 bg-slate-900/90 backdrop-blur-xl border-l border-white/10 flex flex-col pointer-events-auto">
+
+        <!-- Header -->
+        <div class="p-5 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg shadow-lg shadow-blue-500/30">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-base font-bold text-white tracking-tight">Gemini Cosmic AI</h2>
+                    <p class="text-[9px] text-blue-400 uppercase tracking-widest font-bold">Planetary Analysis</p>
+                </div>
+            </div>
+            <div class="flex gap-1.5">
+                <button id="open-space-settings" class="p-2 hover:bg-white/10 rounded-lg transition-colors group">
+                    <i data-lucide="settings"
+                        class="w-4 h-4 text-slate-400 group-hover:text-white group-hover:rotate-45 transition-all duration-300"></i>
+                </button>
+                <button onclick="toggleChat(false)" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div id="chat-history" class="flex-1 overflow-y-auto p-6 space-y-4 font-mono text-sm custom-scroll">
+            <div
+                class="bg-gradient-to-br from-blue-500/20 to-purple-500/10 border border-blue-500/30 p-4 rounded-xl rounded-tl-none">
+                <p class="text-blue-200">🚀 Gemini AI online. I can provide detailed analysis of any celestial body in
+                    the solar system. Click on planets or ask questions!</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-t border-white/10 bg-slate-900/50">
+            <div class="relative">
+                <input type="text" id="chat-input" placeholder="Ask a question..."
+                    class="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 px-4 pr-12 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/50 transition-all font-mono">
+                <button onclick="sendUserMessage()"
+                    class="absolute right-2 top-2 p-1.5 bg-blue-500 hover:bg-blue-400 rounded-lg text-white transition-colors shadow-lg shadow-blue-500/20">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Chat Trigger Button (Visible when UI is active) -->
+    <button id="chat-trigger" onclick="toggleChat(true)"
+        class="absolute top-4 right-4 md:top-8 md:right-8 z-30 p-3 glass-ui rounded-full hover:bg-blue-500/20 transition-all duration-500 translate-x-[200%] opacity-0 pointer-events-auto group">
+        <i data-lucide="message-square" class="w-5 h-5 text-blue-400 group-hover:text-white transition-colors"></i>
+    </button>
+
+    <!-- Settings Modal -->
+    <div id="space-settings-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden items-center justify-center opacity-0 transition-opacity duration-300">
+        <div
+            class="glass-ui w-[420px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300">
+            <div class="px-6 py-5 border-b border-white/10 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-blue-500/30">
+                        <i data-lucide="settings" class="w-4 h-4 text-blue-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Settings</h3>
+                        <p class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Engine Config</p>
+                    </div>
+                </div>
+                <button id="close-space-settings"
+                    class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-all">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1.5 block">AI
+                        Engine</label>
+                    <select id="gemini-model"
+                        class="appearance-none w-full bg-black/30 text-xs text-white border border-white/10 rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500/50 hover:bg-white/5 cursor-pointer font-medium">
+                        <option value="gemini-3-flash-preview" selected
+                            style="background-color: #1e293b; color: white;">⚡ Gemini 3 Flash Preview</option>
+                        <option value="gemini-3-pro-preview" style="background-color: #1e293b; color: white;">✨ Gemini 3
+                            Pro Preview</option>
+                        <option value="gemini-2.0-flash-exp" style="background-color: #1e293b; color: white;">Gemini 2.0
+                            Flash Exp</option>
+                        <option value="gemini-1.5-flash" style="background-color: #1e293b; color: white;">Gemini 1.5
+                            Flash</option>
+                        <option value="gemini-1.5-pro" style="background-color: #1e293b; color: white;">Gemini 1.5 Pro
+                        </option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1.5 block">Custom API
+                        Key (Optional)</label>
+                    <div class="relative">
+                        <input type="password" id="custom-api-key" placeholder="Enter Gemini API key..."
+                            class="w-full bg-black/30 text-xs text-white border border-white/10 rounded-xl px-3 py-2.5 pr-10 focus:outline-none focus:border-blue-500/50 hover:bg-white/5 font-mono placeholder:text-slate-600">
+                        <button onclick="toggleApiKeyVisibility()"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded transition-colors">
+                            <i data-lucide="eye" id="api-eye-icon" class="w-3.5 h-3.5 text-slate-500"></i>
+                        </button>
+                    </div>
+                    <p class="text-[8px] text-slate-600 mt-1.5">Leave empty for default. Get one at <a
+                            href="https://aistudio.google.com/apikey" target="_blank"
+                            class="text-blue-400 hover:underline">AI Studio</a></p>
+                </div>
+            </div>
+            <div class="p-4 border-t border-white/10 flex justify-end">
+                <button id="save-space-settings"
+                    class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-blue-500/20 active:scale-95 transition-all">Save
+                    Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vertex Shader for Atmosphere -->
+    <script type="x-shader/x-vertex" id="vertexShader">
+        varying vec3 vNormal;
+        void main() {
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+
+    <!-- Fragment Shader for Atmosphere -->
+    <script type="x-shader/x-fragment" id="fragmentShader">
+        varying vec3 vNormal;
+        void main() {
+            float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 4.0); // Sharper falloff
+            gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
+        }
+    </script>
+
+    <script>
+        lucide.createIcons();
+
+        // SCENE SETUP
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 8000);
+
+        // DEEP SPACE FOG
+        scene.fog = new THREE.FogExp2(0x000000, 0.00015); // Pure black fog
+        scene.background = new THREE.Color(0x000000);     // Pure black space background
+
+        // Initial Camera Position (Galaxy View)
+        camera.position.set(0, 1500, 3000); // Far away
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // POST PROCESSING
+        const composer = new THREE.EffectComposer(renderer);
+        const renderPass = new THREE.RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            2.0,  // strength
+            0.5,  // radius
+            0.0   // threshold
+        );
+        composer.addPass(bloomPass);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 20;
+        controls.maxDistance = 8000; // Allow zooming out to see Galaxy
+        controls.enablePan = false;  // Keep sun centered
+        controls.zoomSpeed = 0.5;
+        controls.enabled = false; // Disabled during Intro
+
+        // LIGHTS
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.PointLight(0xffffff, 1.5, 2000);
+        sunLight.position.set(0, 0, 0);
+        scene.add(sunLight);
+
+        // ASSETS
+        const textureLoader = new THREE.TextureLoader();
+        const baseTexUrl = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/';
+
+        // HELPER: Generate Canvas Textures (Avoids 404s for simple sprites)
+        function createSpriteTexture(color = '#fff', soft = true) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+
+            if (soft) {
+                const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                grad.addColorStop(0, color);
+                grad.addColorStop(0.2, color);
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+            } else {
+                ctx.fillStyle = color;
+            }
+
+            ctx.fillRect(0, 0, 64, 64);
+            const tex = new THREE.CanvasTexture(canvas);
+            return tex;
+        }
+
+        const discTexture = createSpriteTexture('#ffffff', true); // Soft white glow
+        const sunTexture = textureLoader.load('https://upload.wikimedia.org/wikipedia/commons/b/b4/The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg'); // High res sun
+
+
+        // --- GALAXY GENERATION ---
+        const galaxyGroup = new THREE.Group();
+        const galaxyParams = {
+            count: 80000,
+            size: 0.1,
+            radius: 2000,
+            branches: 3, // Distinct spiral arms
+            spin: 1,
+            randomness: 0.2,
+            randomnessPower: 3,
+            insideColor: '#ffbb66', // Golden Core
+            outsideColor: '#4455ff' // Blue Arms
+        };
+
+        let galaxyGeometry = null;
+        let galaxyMaterial = null;
+        let galaxyPoints = null;
+
+        function generateGalaxy() {
+            if (galaxyPoints !== null) {
+                galaxyGeometry.dispose();
+                galaxyMaterial.dispose();
+                scene.remove(galaxyPoints);
+            }
+
+            galaxyGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(galaxyParams.count * 3);
+            const colors = new Float32Array(galaxyParams.count * 3);
+
+            const colorInside = new THREE.Color(galaxyParams.insideColor);
+            const colorOutside = new THREE.Color(galaxyParams.outsideColor);
+
+            for (let i = 0; i < galaxyParams.count; i++) {
+                const i3 = i * 3;
+                const radius = Math.random() * galaxyParams.radius;
+                const spinAngle = radius * galaxyParams.spin;
+                const branchAngle = (i % galaxyParams.branches) / galaxyParams.branches * Math.PI * 2;
+
+                // Logarithmic Spiral Logic
+                const randomX = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+                const randomY = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+                const randomZ = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+
+                positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+                positions[i3 + 1] = randomY * 0.4; // Flattened disk
+                positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+                const mixedColor = colorInside.clone();
+                mixedColor.lerp(colorOutside, radius / galaxyParams.radius);
+
+                colors[i3] = mixedColor.r * 2.5; // Brightness boost for bloom
+                colors[i3 + 1] = mixedColor.g * 2.5;
+                colors[i3 + 2] = mixedColor.b * 2.5;
+            }
+
+            galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            galaxyGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            galaxyMaterial = new THREE.PointsMaterial({
+                size: galaxyParams.size * 50,
+                sizeAttenuation: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+                vertexColors: true,
+                map: discTexture,
+                transparent: true,
+                opacity: 0.8
+            });
+            galaxyPoints = new THREE.Points(galaxyGeometry, galaxyMaterial);
+            galaxyGroup.add(galaxyPoints);
+        }
+
+        scene.add(galaxyGroup);
+        generateGalaxy();
+
+
+        // --- SOLAR SYSTEM ---
+        const solarSystemGroup = new THREE.Group();
+        solarSystemGroup.visible = false;
+        scene.add(solarSystemGroup);
+
+        const planets = [
+            { name: "Mercury", size: 1.5, dist: 25, speed: 0.02, color: 0xA5A5A5, type: "Terrestrial", year: "88 days", radius: "2,439 km", temp: "167°C", gravity: "3.7 m/s²", desc: "The smallest planet in the Solar System and the closest to the Sun." },
+            { name: "Venus", size: 2.8, dist: 35, speed: 0.015, color: 0xE3BB76, type: "Terrestrial", year: "225 days", radius: "6,051 km", temp: "464°C", gravity: "8.87 m/s²", desc: "Spinning in the opposite direction to most planets, Venus is the hottest planet.", hasAtmos: true },
+            { name: "Earth", size: 3, dist: 50, speed: 0.01, tex: 'earth_atmos_2048.jpg', type: "Terrestrial", year: "365 days", radius: "6,371 km", temp: "15°C", gravity: "9.8 m/s²", desc: "Our home planet, the only known celestial body to support life.", hasClouds: true, hasMoon: true, hasAtmos: true },
+            { name: "Mars", size: 2.2, dist: 65, speed: 0.008, color: 0xDD4C22, type: "Terrestrial", year: "687 days", radius: "3,389 km", temp: "-65°C", gravity: "3.71 m/s²", desc: "The Red Planet, home to Olympus Mons, the largest volcano in the solar system." },
+            { name: "Jupiter", size: 9, dist: 100, speed: 0.004, color: 0xD6A886, type: "Gas Giant", year: "12 years", radius: "69,911 km", temp: "-110°C", gravity: "24.79 m/s²", desc: "The largest planet, a gas giant with a Great Red Spot storm larger than Earth." },
+            { name: "Saturn", size: 7.5, dist: 140, speed: 0.003, color: 0xF4D03F, ring: true, type: "Gas Giant", year: "29 years", radius: "58,232 km", temp: "-140°C", gravity: "10.44 m/s²", desc: "Adorned with a dazzling, complex system of icy rings." },
+            { name: "Uranus", size: 5, dist: 180, speed: 0.002, color: 0x8BE3E8, type: "Ice Giant", year: "84 years", radius: "25,362 km", temp: "-195°C", gravity: "8.69 m/s²", desc: "An ice giant that rotates on its side, likely due to a massive ancient collision." },
+            { name: "Neptune", size: 4.8, dist: 210, speed: 0.0018, color: 0x5B73F2, type: "Ice Giant", year: "165 years", radius: "24,622 km", temp: "-200°C", gravity: "11.15 m/s²", desc: "The farthest known planet, a dark, cold, and windy world." }
+        ];
+
+        const planetMeshes = [];
+        const cloudMeshes = [];
+        const moonMeshes = [];
+        const moonOrbits = [];
+
+        // SUN
+        const sunGeo = new THREE.SphereGeometry(12, 64, 64);
+        const sunMat = new THREE.MeshBasicMaterial({
+            map: sunTexture,
+            color: 0xffaaaa // Tint slightly warm
+        });
+        sunMat.color.multiplyScalar(2); // Moderate Bloom Boost
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        const sunGlowMat = new THREE.SpriteMaterial({
+            map: discTexture, // Use soft disc instead of snowflake for fewer spikes
+            color: 0xFFA500,
+            transparent: true,
+            opacity: 0.6, // Slightly reduced opacity
+            blending: THREE.AdditiveBlending
+        });
+        const sunHalo = new THREE.Sprite(sunGlowMat);
+        sunHalo.scale.set(120, 120, 1); // Maintain size for softness (reduced spikes by texture change)
+        // User requested "glow effect height" reduction - this could mean atmosphere too.
+        // Let's also reduce this slightly just in case.
+        sunHalo.scale.set(90, 90, 1);
+        sun.add(sunHalo);
+        solarSystemGroup.add(sun);
+
+
+        // CREATE PLANETS
+        planets.forEach(p => {
+            const orbitGroup = new THREE.Group();
+            solarSystemGroup.add(orbitGroup);
+            p.orbitGroup = orbitGroup;
+
+            const floatGroup = new THREE.Group();
+            floatGroup.position.x = p.dist;
+            orbitGroup.add(floatGroup);
+
+            let mat;
+            if (p.tex) {
+                mat = new THREE.MeshPhongMaterial({ map: textureLoader.load(baseTexUrl + p.tex) });
+            } else {
+                mat = new THREE.MeshPhongMaterial({ color: p.color });
+            }
+
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(p.size, 64, 64), mat);
+            mesh.userData = p;
+            p.mesh = mesh; // <--- Linked for raycaster lookup
+            floatGroup.add(mesh);
+            planetMeshes.push(mesh);
+
+            // SCALE 5: CLOUDS (Earth)
+            if (p.hasClouds) {
+                const cloudGeo = new THREE.SphereGeometry(p.size * 1.01, 64, 64);
+                const cloudMat = new THREE.MeshPhongMaterial({
+                    map: textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png'),
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    side: THREE.DoubleSide
+                });
+                const clouds = new THREE.Mesh(cloudGeo, cloudMat);
+                mesh.add(clouds);
+                cloudMeshes.push(clouds);
+            }
+
+            // SCALE 5: ATMOSPHERE SHADER (Earth & Venus)
+            if (p.hasAtmos) {
+                const atmosGeo = new THREE.SphereGeometry(p.size * 1.1, 64, 64); // Reduced from 1.15
+                const atmosMat = new THREE.ShaderMaterial({
+                    vertexShader: document.getElementById('vertexShader').textContent,
+                    fragmentShader: document.getElementById('fragmentShader').textContent,
+                    blending: THREE.AdditiveBlending,
+                    side: THREE.BackSide,
+                    transparent: true
+                });
+                const atmosphere = new THREE.Mesh(atmosGeo, atmosMat);
+                mesh.add(atmosphere);
+            }
+
+            // SCALE 6: MOON (Earth)
+            if (p.hasMoon) {
+                const moonOrbitGroup = new THREE.Group();
+                mesh.add(moonOrbitGroup); // Attached to planet mesh orbit
+
+                const moonMesh = new THREE.Mesh(
+                    new THREE.SphereGeometry(p.size * 0.27, 32, 32),
+                    new THREE.MeshPhongMaterial({
+                        map: textureLoader.load(baseTexUrl + 'moon_1024.jpg')
+                    })
+                );
+                moonMesh.userData = { parentPlanet: p.name }; // Tag for raycaster
+                moonMesh.position.x = p.size * 3; // Distance from Earth
+                moonOrbitGroup.add(moonMesh);
+                moonMeshes.push(moonMesh);
+                moonOrbits.push({ group: moonOrbitGroup, speed: 0.02 });
+            }
+
+            if (p.ring) {
+                const ringGeo = new THREE.RingGeometry(p.size * 1.4, p.size * 2.2, 128);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0xAFAFAF, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.rotation.y = 0.2;
+                mesh.add(ring);
+            }
+
+            const pathGeo = new THREE.RingGeometry(p.dist - 0.2, p.dist + 0.2, 128);
+            const pathMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.05, transparent: true, side: THREE.DoubleSide });
+            const path = new THREE.Mesh(pathGeo, pathMat);
+            path.rotation.x = Math.PI / 2;
+            solarSystemGroup.add(path);
+        });
+
+        // --- SCALE 4: ASTEROID BELT (Between Mars & Jupiter) ---
+        const asteroidGeo = new THREE.OctahedronGeometry(0.2, 0);
+        const asteroidMat = new THREE.MeshPhongMaterial({ color: 0x888888 });
+        const asteroidInstanced = new THREE.InstancedMesh(asteroidGeo, asteroidMat, 2000);
+        const dummy = new THREE.Object3D();
+
+        for (let i = 0; i < 2000; i++) {
+            // Between dist 65 (Mars) and 100 (Jupiter) -> roughly 75-90 range
+            const dist = 70 + Math.random() * 25;
+            const angle = Math.random() * Math.PI * 2;
+            const x = Math.cos(angle) * dist;
+            const z = Math.sin(angle) * dist;
+            const y = (Math.random() - 0.5) * 5; // Slight vertical spread
+
+            dummy.position.set(x, y, z);
+            dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            dummy.scale.setScalar(Math.random() * 2 + 0.5);
+            dummy.updateMatrix();
+            asteroidInstanced.setMatrixAt(i, dummy.matrix);
+        }
+        solarSystemGroup.add(asteroidInstanced);
+
+        // BACKGROUND STARS (Deep Field)
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = [];
+        const starColors = [];
+        for (let i = 0; i < 50000; i++) { // Doubled to 50k
+            const x = (Math.random() - 0.5) * 10000; // Even wider spread to fill void
+            const y = (Math.random() - 0.5) * 10000;
+            const z = (Math.random() - 0.5) * 10000;
+            starPos.push(x, y, z);
+
+            const c = new THREE.Color();
+            c.setHSL(Math.random(), 0.8, Math.random()); // More varied brightness
+            starColors.push(c.r, c.g, c.b);
+        }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        starGeo.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+        starGeo.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+        const starMat = new THREE.PointsMaterial({
+            size: 4, // Larger stars
+            vertexColors: true,
+            map: discTexture,
+            transparent: true,
+            sizeAttenuation: true,
+            alphaTest: 0.01
+        });
+        const stars = new THREE.Points(starGeo, starMat);
+        solarSystemGroup.add(stars);
+
+
+        // --- TRANSITION LOGIC ---
+        let isTransitioning = false;
+        let transitionTime = 0;
+        const transitionDuration = 200; // frames roughly
+
+        const introOverlay = document.getElementById('intro-overlay');
+        const mainUI = document.getElementById('main-ui');
+
+        function startJourney() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            // Fade out Intro UI
+            introOverlay.style.opacity = '0';
+            setTimeout(() => introOverlay.style.display = 'none', 1000);
+
+            // Start zoom animation via RequestAnimationFrame
+        }
+
+        // RAYCASTER
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', onMouseClick);
+
+        // onMouseClick moved to bottom logic
+
+        const infoPanel = document.getElementById('info-panel');
+        function showInfo(p) {
+            document.getElementById('p-name').innerText = p.name || 'Unknown';
+            document.getElementById('p-type').innerText = p.type || 'Unknown';
+            document.getElementById('p-desc').innerText = p.desc || 'No data available.';
+            document.getElementById('p-year').innerText = p.year || '--';
+
+            // New Metrics
+            document.getElementById('p-radius').innerText = p.radius || '--';
+            document.getElementById('p-temp').innerText = p.temp || '--';
+            document.getElementById('p-gravity').innerText = p.gravity || '--';
+
+            infoPanel.classList.remove('translate-y-[150%]', 'opacity-0');
+        }
+
+        function hideInfo() {
+            infoPanel.classList.add('translate-y-[150%]', 'opacity-0');
+        }
+
+        function resetCamera() {
+            camera.position.set(0, 100, 250);
+            controls.target.set(0, 0, 0);
+            hideInfo();
+        }
+
+        // ANIMATION LOOP
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // GALAXY IDLE ANIMATION
+            if (galaxyGroup.visible) {
+                galaxyGroup.rotation.y += 0.0005;
+                galaxyGroup.rotation.z += 0.0001;
+            }
+
+            // TRANSITION SEQUENCE
+            if (isTransitioning) {
+                transitionTime++;
+                const t = Math.min(transitionTime / transitionDuration, 1);
+
+                // Exponential ease-in-out
+                const ease = t < .5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+
+                // Zoom towards center
+                // Start: 0, 1500, 3000
+                // End:   0, 100, 250
+                camera.position.x = THREE.MathUtils.lerp(0, 0, ease);
+                camera.position.y = THREE.MathUtils.lerp(1500, 100, ease);
+                camera.position.z = THREE.MathUtils.lerp(3000, 250, ease);
+
+                // Opacity Crossfade
+                if (t > 0.7) {
+                    solarSystemGroup.visible = true;
+                    galaxyPoints.material.opacity = 1 - ((t - 0.7) * 3.3);
+                }
+
+                if (t === 1) {
+                    isTransitioning = false;
+                    // galaxyGroup.visible = false; // DON'T HIDE GALAXY
+                    controls.enabled = true;
+                    mainUI.style.opacity = '1';
+                }
+            }
+
+            // DYNAMIC GALAXY VISIBILITY (Based on Camera Distance)
+            if (!isTransitioning) { // Normal mode
+                const dist = camera.position.distanceTo(new THREE.Vector3(0, 0, 0));
+                // Fade out galaxy when close (0 to 1000)
+                // Fade in galaxy when far (1000 to 3000)
+                const galaxyOpacity = THREE.MathUtils.smoothstep(dist, 500, 2500);
+                galaxyPoints.material.opacity = galaxyOpacity;
+                galaxyGroup.visible = galaxyOpacity > 0.01;
+            }
+
+            if (solarSystemGroup.visible) {
+                // Planet Orbits
+                planets.forEach(p => {
+                    p.orbitGroup.rotation.y += p.speed * 0.5;
+                });
+
+                // Planet Axial Rotations
+                planetMeshes.forEach(m => {
+                    m.rotation.y += 0.005;
+                });
+
+                // Cloud Rotation (Independent)
+                cloudMeshes.forEach(c => {
+                    c.rotation.y += 0.007; // Faster than surface
+                });
+
+                // Moon Orbits
+                moonOrbits.forEach(m => {
+                    m.group.rotation.y += m.speed;
+                });
+
+                // Asteroid Belt Rotation
+                asteroidInstanced.rotation.y += 0.001;
+
+                sun.rotation.y += 0.002;
+            }
+
+            controls.update();
+            composer.render();
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+            composer.setSize(width, height);
+        });
+
+        // --- COSMIC ASSISTANT UI LOGIC ---
+
+        function toggleChat(show) {
+            const sidebar = document.getElementById('chat-sidebar');
+            const chatTrigger = document.getElementById('chat-trigger');
+
+            if (show) {
+                sidebar.classList.remove('translate-x-full');
+                chatTrigger.classList.add('translate-x-[200%]', 'opacity-0');
+            } else {
+                sidebar.classList.add('translate-x-full');
+                chatTrigger.classList.remove('translate-x-[200%]', 'opacity-0');
+            }
+        }
+
+        // --- SETTINGS MODAL LOGIC ---
+        const spaceSettingsModal = document.getElementById('space-settings-modal');
+        const spaceSettingsContent = spaceSettingsModal.querySelector('.glass-ui');
+
+        document.getElementById('open-space-settings').onclick = () => {
+            spaceSettingsModal.classList.remove('hidden');
+            spaceSettingsModal.classList.add('flex');
+            setTimeout(() => {
+                spaceSettingsModal.classList.remove('opacity-0');
+                spaceSettingsContent.classList.remove('scale-95');
+                spaceSettingsContent.classList.add('scale-100');
+            }, 10);
+        };
+
+        const closeSpaceSettings = () => {
+            spaceSettingsModal.classList.add('opacity-0');
+            spaceSettingsContent.classList.remove('scale-100');
+            spaceSettingsContent.classList.add('scale-95');
+            setTimeout(() => {
+                spaceSettingsModal.classList.add('hidden');
+                spaceSettingsModal.classList.remove('flex');
+            }, 300);
+        };
+
+        document.getElementById('close-space-settings').onclick = closeSpaceSettings;
+        document.getElementById('save-space-settings').onclick = () => {
+            // Save to localStorage for cross-page sharing
+            const model = document.getElementById('gemini-model').value;
+            const apiKey = document.getElementById('custom-api-key').value;
+            localStorage.setItem('galactic_gemini_model', model);
+            localStorage.setItem('galactic_gemini_apikey', apiKey);
+            closeSpaceSettings();
+        };
+
+        // Load saved settings from localStorage
+        (function loadSettings() {
+            const savedModel = localStorage.getItem('galactic_gemini_model');
+            const savedKey = localStorage.getItem('galactic_gemini_apikey');
+            if (savedModel) document.getElementById('gemini-model').value = savedModel;
+            if (savedKey) document.getElementById('custom-api-key').value = savedKey;
+        })();
+
+        // Allow 'Enter' key to send message
+        document.getElementById('chat-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendUserMessage();
+            }
+        });
+
+        // --- AI CHAT LOGIC ---
+
+        // Toggle API key visibility
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('custom-api-key');
+            const icon = document.getElementById('api-eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        // --- AI CHAT LOGIC ---
+        let chatHistory = [];
+        let currentPlanetContext = "The User is currently viewing the entire Solar System.";
+
+        function addMessage(sender, text) {
+            const history = document.getElementById('chat-history');
+            const isUser = sender === 'You';
+            const colorClass = isUser ? 'text-white bg-white/5 border-white/10' : 'text-blue-200 bg-gradient-to-br from-blue-500/20 to-purple-500/10 border-blue-500/30';
+
+            const msgHTML = `
+                <div class="${colorClass} border p-3 rounded-xl ${isUser ? 'rounded-tr-none ml-8' : 'rounded-tl-none mr-8'} animate-enter">
+                    <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">${sender}</p>
+                    <p>${text}</p>
+                </div>
+            `;
+            history.insertAdjacentHTML('beforeend', msgHTML);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        async function sendUserMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage('You', text);
+            input.value = '';
+
+            await chatWithAI(text);
+        }
+
+        async function chatWithAI(prompt) {
+            const defaultApiKey = "";
+            const customKey = document.getElementById('custom-api-key')?.value.trim();
+            const apiKey = customKey || defaultApiKey;
+            const modelSelect = document.getElementById('gemini-model');
+            const selectedModel = modelSelect.value;
+
+            console.log("Using Gemini model:", selectedModel);
+            console.log("Using custom API key:", customKey ? "Yes" : "No (default)");
+
+            // Add user message to history
+            chatHistory.push({ role: "user", content: prompt });
+
+            // Build conversation for Gemini (last 10 messages)
+            const recentHistory = chatHistory.slice(-10);
+            const conversationContext = recentHistory.map(msg =>
+                `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+            ).join('\n');
+
+            const fullPrompt = `You are a professional astronomer AI assistant on a spaceship. Keep answers concise (max 2-3 sentences), fascinating, and scientific.
+
+CONTEXT: ${currentPlanetContext}
+
+CONVERSATION:
+${conversationContext}
+
+Provide your response:`;
+
+            try {
+                // Check if SDK is loaded
+                if (!window.GoogleGenerativeAI) {
+                    throw new Error('Gemini SDK not loaded yet. Please refresh the page.');
+                }
+
+                const genAI = new window.GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({ model: selectedModel });
+
+                const result = await model.generateContent(fullPrompt);
+                const response = await result.response;
+                const aiText = response.text();
+
+                // Add AI response to history
+                chatHistory.push({ role: "assistant", content: aiText });
+                addMessage('Gemini AI', aiText);
+
+            } catch (err) {
+                console.error('Gemini API Error:', err);
+                const errorMsg = err.message || 'Unknown error';
+                addMessage('System', `⚠️ Error: ${errorMsg}`);
+            }
+        }
+
+        // RAYCASTER CLICK UPDATE
+        window.addEventListener('click', onMouseClick);
+        function onMouseClick(event) {
+            if (event.target.closest('.pointer-events-auto')) return;
+            if (solarSystemGroup.visible === false) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const interactables = [...planetMeshes, sun, ...moonMeshes];
+            const intersects = raycaster.intersectObjects(interactables);
+
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                let name = "";
+                let type = "";
+
+                if (obj === sun) {
+                    name = "The Sun";
+                    type = "Star";
+                    // Manually show sun info
+                    showInfo({
+                        name: "The Sun", type: "G-Type Main-Sequence Star",
+                        desc: "The star at the center of our Solar System.",
+                        year: "230 million years (Galactic Orbit)",
+                        radius: "696,340 km", temp: "5,500°C", gravity: "274 m/s²"
+                    });
+                } else if (obj.userData.parentPlanet) {
+                    name = `Moon of ${obj.userData.parentPlanet}`;
+                    type = "Moon";
+                    // Maybe show info for moon if we had data, or just generic
+                    showInfo({
+                        name: name, type: "Natural Satellite",
+                        desc: "A natural satellite orbiting a planet.",
+                        year: "--", radius: "--", temp: "--", gravity: "--"
+                    });
+                } else {
+                    // Find planet name from mesh
+                    const p = planets.find(p => p.mesh === obj);
+                    if (p) {
+                        name = p.name;
+                        type = "Planet";
+                        showInfo(p); // <--- CRITICAL RESTORATION
+                    }
+                }
+
+                if (name) {
+                    // Update Context
+                    currentPlanetContext = `The User has selected ${name} (${type}). Focus answers on this object.`;
+
+                    // Reset history on new selection? No, keep history but shift context.
+                    // Ideally we push a system event to history, but for now the injected system content handles it.
+
+                    toggleChat(true);
+
+                    // UX: Don't auto-analyze. Wait for user input.
+                    // Context is set in 'currentPlanetContext' variable.
+
+                    addMessage("System", `Target Locked: **${name}**. Ready for queries.`);
+                }
+            }
+        }
+
+        // DROPDOWN PLANET SELECTION LOGIC
+        function onPlanetDropdownSelect(selectedName) {
+            if (!selectedName) return;
+
+            let targetObj = null;
+            let pData = null;
+            let type = "Planet";
+
+            if (selectedName === "The Sun") {
+                targetObj = sun;
+                type = "Star";
+                pData = {
+                    name: "The Sun", type: "G-Type Main-Sequence Star",
+                    desc: "The star at the center of our Solar System.",
+                    year: "230 million years (Galactic Orbit)",
+                    radius: "696,340 km", temp: "5,500°C", gravity: "274 m/s²"
+                };
+            } else {
+                pData = planets.find(p => p.name === selectedName);
+                if (pData) {
+                    targetObj = pData.mesh;
+                }
+            }
+
+            if (targetObj && pData) {
+                // Determine target camera position based on object
+                const targetPos = new THREE.Vector3();
+                targetObj.getWorldPosition(targetPos);
+
+                let distance = 30; // Default zoom distance
+                if (selectedName === "The Sun") distance = 100;
+                else if (selectedName === "Jupiter" || selectedName === "Saturn") distance = 50;
+
+                // Animate camera to object
+                const currentCamPos = camera.position.clone();
+                const targetCamPos = targetPos.clone().add(new THREE.Vector3(distance, distance * 0.5, distance));
+
+                // Simple Lerp animation for smooth focus
+                let lerpFactor = 0;
+                const focusAnim = setInterval(() => {
+                    lerpFactor += 0.05;
+                    camera.position.lerpVectors(currentCamPos, targetCamPos, lerpFactor);
+                    controls.target.lerpVectors(controls.target, targetPos, lerpFactor);
+                    if (lerpFactor >= 1) clearInterval(focusAnim);
+                }, 16);
+
+                showInfo(pData);
+
+                // Update Gemini Context
+                currentPlanetContext = `The User has selected ${selectedName} (${type}). Focus answers on this object.`;
+                addMessage("System", `Target Locked: **${selectedName}**. Ready for queries.`);
+
+                // Show Sidebar
+                toggleChat(true);
+            }
+        }
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

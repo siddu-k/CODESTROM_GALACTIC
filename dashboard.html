@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic AI | Command Deck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #030508;
+            color: #f1f5f9;
+            font-family: 'Inter', system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .experience {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .glass-card {
+            background: rgba(10, 18, 32, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(15, 25, 45, 0.8);
+            border-color: var(--hover-color, rgba(59, 130, 246, 0.4));
+            box-shadow: 0 0 50px var(--glow-color, rgba(59, 130, 246, 0.12)), 0 20px 60px rgba(0, 0, 0, 0.5);
+            transform: translateY(-6px) scale(1.02);
+        }
+
+        .glass-card .card-icon {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover .card-icon {
+            transform: scale(1.15);
+            box-shadow: 0 0 25px var(--glow-color, rgba(59, 130, 246, 0.3));
+        }
+
+        .glass-card .arrow-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .glass-card:hover .arrow-icon {
+            transform: translateX(5px);
+        }
+
+        .header-glass {
+            background: rgba(5, 10, 20, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .status-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-animate {
+            animation: fadeInUp 0.8s ease forwards;
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 3D Black Hole (Galaxy) -->
+    <div class="experience"></div>
+
+    <!-- Back Button -->
+    <a href="index.html"
+        class="fixed top-5 left-5 z-30 flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl pointer-events-auto group hover:border-white/20"
+        style="--hover-color: rgba(148, 163, 184, 0.2); --glow-color: rgba(148, 163, 184, 0.08);">
+        <i data-lucide="arrow-left" class="w-4 h-4 text-slate-400 group-hover:text-white transition-colors"></i>
+        <span class="text-xs font-bold text-slate-400 group-hover:text-white transition-colors">Back</span>
+    </a>
+
+    <!-- Logout Button -->
+    <button onclick="logoutUser()"
+        class="fixed top-5 right-5 z-30 flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl pointer-events-auto group hover:border-red-500/30"
+        style="--hover-color: rgba(239, 68, 68, 0.25); --glow-color: rgba(239, 68, 68, 0.1);">
+        <i data-lucide="log-out" class="w-4 h-4 text-slate-400 group-hover:text-red-400 transition-colors"></i>
+        <span class="text-xs font-bold text-slate-400 group-hover:text-red-400 transition-colors">Logout</span>
+    </button>
+
+    <!-- Cards Grid — 2x2 around the earth -->
+    <div class="fixed inset-0 z-20 pointer-events-none flex items-center justify-center p-8">
+        <div
+            class="grid grid-cols-[280px_1fr_280px] grid-rows-[auto_1fr_auto] gap-8 w-full max-w-[1100px] h-full max-h-[680px]">
+
+            <!-- Top Left Card — Geospatial Research -->
+            <a href="aiarea.html"
+                class="glass-card rounded-2xl p-5 block group pointer-events-auto self-start card-animate"
+                style="--hover-color: rgba(52, 211, 153, 0.35); --glow-color: rgba(52, 211, 153, 0.12); animation-delay: 0.2s;">
+                <div class="flex items-start gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 card-icon shrink-0">
+                        <i data-lucide="map" class="w-5 h-5 text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white mb-1 tracking-tight">Geospatial Research</h2>
+                        <p class="text-slate-400 text-[10px] leading-relaxed mb-2">AI terrain analysis & mapping.</p>
+                        <div
+                            class="flex items-center gap-1.5 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                            <span>Launch</span>
+                            <i data-lucide="arrow-right" class="w-3 h-3 arrow-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Top spacer -->
+            <div></div>
+
+            <!-- Top Right Card — Climate Monitor -->
+            <a href="climate.html"
+                class="glass-card rounded-2xl p-5 block group pointer-events-auto self-start card-animate"
+                style="--hover-color: rgba(34, 211, 238, 0.35); --glow-color: rgba(34, 211, 238, 0.12); animation-delay: 0.4s;">
+                <div class="flex items-start gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center border border-cyan-500/20 card-icon shrink-0">
+                        <i data-lucide="globe" class="w-5 h-5 text-cyan-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white mb-1 tracking-tight">Global Climate</h2>
+                        <p class="text-slate-400 text-[10px] leading-relaxed mb-2">3D weather & atmospheric data.</p>
+                        <div
+                            class="flex items-center gap-1.5 text-cyan-400 text-[10px] font-bold uppercase tracking-wider">
+                            <span>Launch</span>
+                            <i data-lucide="arrow-right" class="w-3 h-3 arrow-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Middle row spacer (earth shows through here) -->
+            <div></div>
+            <div></div>
+            <div></div>
+
+            <!-- Bottom Left Card — Cosmic Research -->
+            <a href="research.html"
+                class="glass-card rounded-2xl p-5 block group pointer-events-auto self-end card-animate"
+                style="--hover-color: rgba(168, 85, 247, 0.35); --glow-color: rgba(168, 85, 247, 0.12); animation-delay: 0.6s;">
+                <div class="flex items-start gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center border border-purple-500/20 card-icon shrink-0">
+                        <i data-lucide="search" class="w-5 h-5 text-purple-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white mb-1 tracking-tight">Cosmic Research</h2>
+                        <p class="text-slate-400 text-[10px] leading-relaxed mb-2">NASA archives & mission data.</p>
+                        <div
+                            class="flex items-center gap-1.5 text-purple-400 text-[10px] font-bold uppercase tracking-wider">
+                            <span>Launch</span>
+                            <i data-lucide="arrow-right" class="w-3 h-3 arrow-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Bottom spacer -->
+            <div></div>
+
+            <!-- Bottom Right Card — Solar System -->
+            <a href="spaceinfo.html"
+                class="glass-card rounded-2xl p-5 block group pointer-events-auto self-end card-animate"
+                style="--hover-color: rgba(251, 146, 60, 0.35); --glow-color: rgba(251, 146, 60, 0.12); animation-delay: 0.8s;">
+                <div class="flex items-start gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20 card-icon shrink-0">
+                        <i data-lucide="sun" class="w-5 h-5 text-orange-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white mb-1 tracking-tight">Solar System</h2>
+                        <p class="text-slate-400 text-[10px] leading-relaxed mb-2">Interactive 3D orbit simulation.</p>
+                        <div
+                            class="flex items-center gap-1.5 text-orange-400 text-[10px] font-bold uppercase tracking-wider">
+                            <span>Launch</span>
+                            <i data-lucide="arrow-right" class="w-3 h-3 arrow-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        lucide.createIcons();
+
+        function logoutUser() {
+            auth.signOut().then(() => {
+                window.location.href = 'login.html';
+            });
+        }
+    </script>
+    <script src="galaxy-blackhole.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic AI | Multi-Mission Command</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="loading" class="fixed inset-0 bg-black z-[200] flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-48 h-1 bg-slate-900 mb-4 rounded-full overflow-hidden">
+                <div id="loadProgress" class="h-full bg-blue-500 w-0 transition-all duration-500"></div>
+            </div>
+            <p class="text-[10px] tracking-[0.5em] uppercase text-blue-400">Loading Galactic AI v5.0</p>
+        </div>
+    </div>
+
+    <!-- Background Grid -->
+    <div class="grid-overlay"></div>
+    <!-- Flat Map Container -->
+    <div id="flat-map" class="absolute inset-0 z-[5] hidden"></div>
+
+    <!-- Navigation -->
+    <nav id="nav-side" class="interactive">
+        <div onclick="switchPage('home')" id="nav-home" class="nav-icon active" title="Bridge Control">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+        </div>
+        <div onclick="switchPage('space')" id="nav-space" class="nav-icon" title="Space Research">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2a7 7 0 1 0 10 10" />
+            </svg>
+        </div>
+        <div onclick="switchPage('agri')" id="nav-agri" class="nav-icon agri" title="Agriculture">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 20h10" />
+                <path d="M10 20V8a2 2 0 1 1 4 0v12" />
+                <path d="M7 13l3 3 3-3" />
+                <path d="M14 13l3 3 3-3" />
+            </svg>
+        </div>
+        <div onclick="switchPage('climate')" id="nav-climate" class="nav-icon climate" title="Climate & Sustainability">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+            </svg>
+        </div>
+        <div onclick="switchPage('edtech')" id="nav-edtech" class="nav-icon edtech" title="Education Hub">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                <path d="M6 12v5c3 3 9 3 12 0v-5" />
+            </svg>
+        </div>
+        <div onclick="switchPage('cyber')" id="nav-cyber" class="nav-icon cyber" title="Cyber Sentinel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+        </div>
+    </nav>
+
+    <!-- Pages Container -->
+    <div id="pages" class="pl-[80px]">
+
+        <!-- HOME PAGE (The Bridge) -->
+        <section id="page-home" class="page active grid-cols-[350px_1fr_350px] animate-page">
+            <div class="flex flex-col gap-4">
+                <div class="glass-panel p-8 rounded-2xl interactive">
+                    <h1 class="text-3xl font-black mb-2 tracking-tighter">THE BRIDGE</h1>
+                    <p class="text-slate-500 text-sm">Universal Access Point</p>
+                    <div class="mt-8 space-y-4">
+                        <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                            <h4 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Active Status</h4>
+                            <p class="text-sm font-medium mt-1">Satellite Link: NOMINAL</p>
+                            <p class="text-sm font-medium mt-1 text-emerald-400">Agri-Sensors: ONLINE</p>
+                            <p class="text-sm font-medium mt-1 text-cyan-400">Climate Buoys: CONNECTED</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div></div>
+            <div class="flex flex-col gap-4">
+                <div class="glass-panel p-6 rounded-2xl interactive terminal">
+                    <p class="text-blue-400 mb-2 font-bold uppercase">System Logs</p>
+                    <div id="logContent" class="h-40 overflow-hidden">
+                        <div>> Initializing main loop...</div>
+                        <div>> Syncing Sol-3 telemetry...</div>
+                        <div>> AI core ready.</div>
+                        <div>> Climate module loaded.</div>
+                        <div>> EdTech database linked.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SPACE TECH PAGE -->
+        <section id="page-space" class="page grid-cols-[1fr_350px] animate-page">
+            <div class="flex flex-col justify-end pb-10">
+                <div class="glass-panel p-6 rounded-2xl w-fit interactive">
+                    <h3 class="text-xs font-bold text-blue-400 mb-4 tracking-[0.2em]">PLANETARY EXPLORATION</h3>
+                    <div class="flex gap-4">
+                        <button onclick="changePlanet('earth')"
+                            class="px-6 py-3 bg-slate-900 border border-slate-700 rounded-xl hover:bg-slate-800 transition-all text-sm font-bold">Earth</button>
+                        <button onclick="changePlanet('mars')"
+                            class="px-6 py-3 bg-slate-900 border border-slate-700 rounded-xl hover:bg-slate-800 transition-all text-sm font-bold">Mars</button>
+                        <button onclick="changePlanet('jupiter')"
+                            class="px-6 py-3 bg-slate-900 border border-slate-700 rounded-xl hover:bg-slate-800 transition-all text-sm font-bold">Jupiter</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div class="glass-panel p-6 rounded-2xl interactive">
+                    <h2 class="text-xl font-bold mb-4">Space AI Researcher</h2>
+                    <div id="spaceAIRes" class="text-sm text-slate-400 min-h-[100px] mb-4">Requesting orbital
+                        insights...</div>
+                    <input id="spaceAIInput" type="text" placeholder="Query planetary data..."
+                        class="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-xs focus:ring-1 focus:ring-blue-500 outline-none">
+                    <button onclick="askAI('space')"
+                        class="w-full mt-2 bg-blue-600 py-2 rounded-lg text-xs font-bold">EXECUTE QUERY</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- AGRICULTURE PAGE -->
+        <section id="page-agri" class="page grid-cols-[350px_1fr] animate-page">
+            <div class="flex flex-col gap-4">
+                <div
+                    class="glass-panel p-0 rounded-2xl w-80 interactive border-emerald-500/20 overflow-hidden flex flex-col max-h-[85vh]">
+                    <!-- Header -->
+                    <div class="bg-emerald-600/20 p-4 border-b border-white/10 flex items-center gap-2">
+                        <div class="bg-white/10 p-1.5 rounded-lg">🌱</div>
+                        <h1 class="text-sm font-bold text-white tracking-tight">BioFarm AI Path Planner</h1>
+                    </div>
+
+                    <div class="p-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+                        <!-- Data Content (Hidden until analysis) -->
+                        <div id="dashContent" class="hidden space-y-6">
+
+                            <!-- Location Intel -->
+                            <section>
+                                <h2
+                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    📍 Location Intel
+                                </h2>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p class="text-[9px] text-slate-500 uppercase">Elevation</p>
+                                        <p class="text-lg font-bold text-slate-200 flex items-center gap-1">
+                                            <span class="text-blue-400">〰</span> <span id="dashElev">--</span>m
+                                        </p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p class="text-[9px] text-slate-500 uppercase">Coordinates</p>
+                                        <p class="text-[10px] font-mono font-bold text-slate-400 mt-1" id="dashCoords">
+                                            0.00, 0.00
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Weather & Soil -->
+                            <section>
+                                <h2
+                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    🌤 Weather & Soil
+                                </h2>
+                                <div class="space-y-3">
+                                    <div
+                                        class="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                        <div class="flex items-center gap-3">
+                                            <div class="bg-white/10 p-2 rounded-lg">
+                                                💨
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold text-emerald-200" id="dashSoil">Unknown</p>
+                                                <p class="text-[10px] text-emerald-500/80">Soil Type (Est.)</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm font-black text-emerald-400" id="dashPH">-- pH</p>
+                                        </div>
+                                    </div>
+                                    <!-- Extra Soil Stats -->
+                                    <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-400 font-mono">
+                                        <div class="bg-white/5 p-2 rounded">Moisture: <span id="dashMoisture"
+                                                class="text-white">--%</span></div>
+                                        <div class="bg-white/5 p-2 rounded">Nitrogen: <span id="dashNitrogen"
+                                                class="text-white">--</span></div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Recommendations -->
+                            <section>
+                                <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">AI Crop
+                                    Recommendations</h2>
+                                <div class="space-y-2" id="cropList">
+                                    <!-- Populated via JS -->
+                                </div>
+                            </section>
+
+                            <!-- System Notice -->
+                            <div class="p-3 bg-slate-900/50 border border-white/5 rounded-xl">
+                                <h3 class="text-[10px] font-bold text-white mb-1 flex items-center gap-2">
+                                    ℹ System Notice
+                                </h3>
+                                <p class="text-[9px] text-slate-500 leading-relaxed">
+                                    Data generated via area polygon analysis using localized environmental simulations.
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="dashEmpty" class="text-center py-10">
+                            <div class="bg-white/5 p-3 rounded-full inline-block mb-3">📍</div>
+                            <p class="text-xs text-slate-400 px-4">
+                                Use <b>Draw Tools</b> or <b>Locate Me</b> to analyze a field sector.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CLIMATE PAGE (NEW) -->
+        <section id="page-climate" class="page grid-cols-[350px_1fr] animate-page">
+            <div class="flex flex-col gap-4">
+                <div class="glass-panel p-8 rounded-3xl interactive border-cyan-500/20">
+                    <div class="w-10 h-10 bg-cyan-500 rounded-xl mb-4 flex items-center justify-center">
+                        <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold">Climate Watch</h2>
+                    <p class="text-slate-400 text-sm mt-2">Global Sustainability Monitor</p>
+
+                    <div class="mt-8 space-y-4">
+                        <div class="p-4 bg-black/40 rounded-xl border border-slate-700">
+                            <h3 class="text-xs font-bold text-cyan-400">Global Avg Temp</h3>
+                            <p class="text-2xl font-bold mt-1">+1.15°C <span
+                                    class="text-xs font-normal text-slate-400">above pre-industrial</span></p>
+                        </div>
+                        <div class="p-4 bg-black/40 rounded-xl border border-slate-700">
+                            <h3 class="text-xs font-bold text-cyan-400">CO2 Levels</h3>
+                            <p class="text-2xl font-bold mt-1">421 <span class="text-sm font-normal">ppm</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EDTECH PAGE (NEW) -->
+        <section id="page-edtech" class="page grid-cols-[1fr_350px] animate-page">
+            <div id="edtech-content" class="flex flex-col justify-end p-8">
+                <!-- Dynamic Content Here -->
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-purple-500">
+                    <h3 class="text-lg font-bold text-purple-400 mb-2">WELCOME TO SPACE CADET ACADEMY</h3>
+                    <p class="text-sm text-slate-300">Select a module from the right to begin your training.</p>
+                </div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div class="glass-panel p-8 rounded-2xl interactive border-purple-500/20">
+                    <h2 class="text-xl font-bold text-purple-400 mb-4">Knowledge Base</h2>
+                    <ul class="space-y-3 text-sm">
+                        <li onclick="showEdContent('space')"
+                            class="p-3 bg-purple-500/10 rounded-lg cursor-pointer hover:bg-purple-500/20 transition-colors">
+                            🚀 Space Tech 101</li>
+                        <li onclick="showEdContent('agri')"
+                            class="p-3 bg-purple-500/10 rounded-lg cursor-pointer hover:bg-purple-500/20 transition-colors">
+                            🌱 Sustainable Farming</li>
+                        <li onclick="showEdContent('cyber')"
+                            class="p-3 bg-purple-500/10 rounded-lg cursor-pointer hover:bg-purple-500/20 transition-colors">
+                            🛡️ Cybersecurity Basics</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- CYBER SENTINEL PAGE -->
+        <section id="page-cyber" class="page grid-cols-1 animate-page">
+            <div class="flex items-start justify-end">
+                <div class="glass-panel p-6 rounded-2xl w-80 interactive border-red-500/30">
+                    <h3 class="text-red-500 text-xs font-black tracking-widest mb-4">THREAT DETECTION</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center text-[10px] font-mono">
+                            <span class="text-slate-500">DDoS TRAFFIC:</span>
+                            <span class="text-red-400">CRITICAL</span>
+                        </div>
+                        <div class="h-1 w-full bg-slate-800">
+                            <div class="h-full bg-red-500 animate-pulse w-3/4"></div>
+                        </div>
+                        <div id="cyberFeed" class="text-[9px] font-mono text-slate-500 space-y-2">
+                            <p>> Intercepting packet 0x4F2...</p>
+                            <p class="text-red-400">> Suspicious activity in Sector 7</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- HUD Elements (Always visible) -->
+    <div
+        class="fixed bottom-8 left-[110px] glass-panel px-6 py-2 rounded-full text-xs font-mono border-white/10 pointer-events-none">
+        <span class="text-blue-400">COORDS:</span> <span id="hudLat">0.00</span>, <span id="hudLon">0.00</span>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "@google/genai": "https://esm.run/@google/genai"
+        }
+    }
+    </script>
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>

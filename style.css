@@ -1,0 +1,326 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --space-blue: #2f81f7;
+    --agri-green: #238636;
+    --cyber-red: #f85149;
+    --climate-cyan: #39c5bb;
+    --edtech-purple: #a371f7;
+    /* Added for EdTech */
+    /* Added for EdTech */
+    --glass-bg: rgba(30, 41, 59, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --neon-glow: 0 0 10px rgba(47, 129, 247, 0.5);
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #0f172a;
+    color: #e6edf3;
+    font-family: 'Space Grotesk', sans-serif;
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+}
+
+canvas {
+    display: block;
+    z-index: 1;
+    position: relative;
+    transition: opacity 0.5s ease;
+}
+
+#flat-map {
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+/* Cinematic Grid Overlay */
+.grid-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+}
+
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(47, 129, 247, 0.1);
+}
+
+.page {
+    position: absolute;
+    inset: 0;
+    display: none;
+    padding: 40px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.page.active {
+    display: grid;
+}
+
+.interactive {
+    pointer-events: auto;
+}
+
+/* Navigation Sidebar */
+#nav-side {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(15px);
+    z-index: 100;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.nav-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: #8b949e;
+    border: 1px solid transparent;
+}
+
+.nav-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.nav-icon.active {
+    background: var(--space-blue);
+    color: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 15px var(--space-blue);
+}
+
+.nav-icon.agri.active {
+    background: var(--agri-green);
+    box-shadow: 0 0 15px var(--agri-green);
+}
+
+.nav-icon.cyber.active {
+    background: var(--cyber-red);
+    box-shadow: 0 0 15px var(--cyber-red);
+}
+
+.nav-icon.climate.active {
+    background: var(--climate-cyan);
+    box-shadow: 0 0 15px var(--climate-cyan);
+}
+
+.nav-icon.edtech.active {
+    background: var(--edtech-purple);
+    box-shadow: 0 0 15px var(--edtech-purple);
+}
+
+/* Buttons */
+button {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    position: relative;
+    overflow: hidden;
+}
+
+button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+}
+
+button:hover::after {
+    left: 100%;
+}
+
+/* UI Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+.animate-page>div {
+    animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.animate-page>div:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.animate-page>div:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.terminal {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #7d8590;
+    line-height: 1.6;
+}
+
+/* Leaflet Draw Overrides */
+.leaflet-draw-toolbar {
+    margin-top: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-draw-toolbar a {
+    background-color: rgba(1, 4, 9, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+.leaflet-draw-toolbar a:hover {
+    background-color: var(--agri-green) !important;
+    color: #000 !important;
+}
+
+.leaflet-draw-actions {
+    background-color: rgba(1, 4, 9, 0.9) !important;
+    left: -10px !important;
+    /* Fix overlap direction */
+}
+
+.leaflet-draw-actions li a {
+    color: #fff !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Layer Switcher Styling */
+.leaflet-control-layers {
+    background: rgba(1, 4, 9, 0.8) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: 8px !important;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5) !important;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+}
+
+.leaflet-control-layers-expanded {
+    padding: 10px;
+    min-width: 150px;
+}
+
+.leaflet-control-layers-selector {
+    accent-color: var(--agri-green);
+}
+
+/* Locate Me Button */
+.leaflet-control-custom {
+    margin-top: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-control-custom a {
+    background-color: rgba(1, 4, 9, 0.9) !important;
+    color: #fff !important;
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.leaflet-control-custom a:hover {
+    background-color: var(--space-blue) !important;
+    box-shadow: 0 0 10px var(--space-blue);
+}
+
+/* Zoom Control Styling */
+.leaflet-control-zoom {
+    margin-top: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-control-zoom a {
+    background-color: rgba(1, 4, 9, 0.9) !important;
+    color: #fff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    font-family: 'Space Grotesk', sans-serif;
+    transition: all 0.2s;
+}
+
+.leaflet-control-zoom a:hover {
+    background-color: var(--space-blue) !important;
+    color: #fff !important;
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+    font-size: 18px !important;
+    line-height: 24px !important;
+}
+
+.leaflet-popup-content-wrapper {
+    background: rgba(1, 4, 9, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+.leaflet-popup-tip {
+    background: rgba(1, 4, 9, 0.95);
+}

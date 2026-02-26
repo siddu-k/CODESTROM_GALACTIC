@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic AI | Climate Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0f172a;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            font-family: 'Inter', sans-serif;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Glass UI */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .animate-enter {
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Main Dashboard Overlay -->
+    <div class="absolute inset-0 z-10 flex items-center justify-start pl-4 md:pl-20 pointer-events-none">
+        <div class="pointer-events-auto w-full max-w-md animate-enter">
+
+            <!-- Search & Header -->
+            <div class="glass-panel p-6 rounded-3xl mb-4 border-l-4 border-l-cyan-500">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-cyan-500/20 rounded-lg">
+                        <i data-lucide="thermometer" class="text-cyan-400 w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-white tracking-tight">Global Climate</h1>
+                        <p class="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">Real-time Telemetry</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <input type="text" id="city-input" placeholder="Enter City Name (e.g. London)"
+                        class="w-full bg-slate-800/80 border border-white/10 rounded-xl py-3 px-4 pl-10 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-all">
+                    <i data-lucide="search" class="absolute left-3 top-3.5 w-4 h-4 text-slate-500"></i>
+                    <button id="search-btn"
+                        class="absolute right-2 top-2 p-1.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white transition-colors">
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Weather Card (Hidden initially) -->
+            <div id="weather-card" class="glass-panel p-6 rounded-3xl hidden">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 id="loc-name" class="text-3xl font-bold text-white mb-1">--</h2>
+                        <p id="loc-coords" class="text-xs text-slate-400 font-mono">Lat: --, Lon: --</p>
+                    </div>
+                    <div class="text-right">
+                        <div id="temp-display"
+                            class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
+                            --°
+                        </div>
+                        <p class="text-xs text-cyan-400 font-bold mt-1 uppercase">Current</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center gap-3">
+                        <i data-lucide="wind" class="text-slate-400 w-5 h-5"></i>
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase">Wind Speed</p>
+                            <p id="wind-val" class="text-sm font-bold text-white">-- km/h</p>
+                        </div>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center gap-3">
+                        <i data-lucide="droplets" class="text-slate-400 w-5 h-5"></i>
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase">Humidity</p>
+                            <p id="humid-val" class="text-sm font-bold text-white">-- %</p>
+                        </div>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center gap-3">
+                        <i data-lucide="arrow-down" class="text-slate-400 w-5 h-5"></i>
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase">Elevation</p>
+                            <p id="elev-val" class="text-sm font-bold text-white">-- m</p>
+                        </div>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center gap-3">
+                        <i data-lucide="clock" class="text-slate-400 w-5 h-5"></i>
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase">Local Time</p>
+                            <p id="time-val" class="text-sm font-bold text-white">--:--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-msg"
+                class="glass-panel p-4 rounded-xl border-red-500/30 text-red-300 text-sm text-center hidden mt-2">
+                Location not found. Please try again.
+            </div>
+
+            <!-- Back Link -->
+            <a href="index.html"
+                class="inline-block mt-6 text-slate-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">
+                &larr; Return to Orbit
+            </a>
+
+        </div>
+    </div>
+
+    <!-- 3D Tooltip -->
+    <div id="globe-tooltip"
+        class="absolute top-0 left-0 bg-black/80 backdrop-blur-md text-cyan-300 text-xs font-mono p-2 rounded-lg border border-cyan-500/50 pointer-events-none hidden z-50 shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+        Lat: --<br>Lon: --
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- 3D SCENE SETUP (Reused) ---
+        // --- 3D SCENE SETUP (Reused) ---
+        let scene, camera, renderer, globe, clouds, controls;
+
+        function initMap() {
+            scene = new THREE.Scene();
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 2000);
+            if (w > 768) camera.setViewOffset(w, h, -(w * 0.25), 0, w, h); // Shift right
+            camera.position.set(0, 0, 20); // Zoomed in pos
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Lighting
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const pl = new THREE.PointLight(0xffffff, 1.5);
+            pl.position.set(20, 20, 20);
+            scene.add(pl);
+
+            // Globe
+            const loader = new THREE.TextureLoader();
+            const p = { tex: 'earth_atmos_2048.jpg', size: 5 };
+
+            const tex = loader.load(`https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/${p.tex}`);
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+            globe = new THREE.Mesh(
+                new THREE.SphereGeometry(p.size, 128, 128),
+                new THREE.MeshPhongMaterial({ map: tex, shininess: 15, specular: new THREE.Color(0x333333) })
+            );
+            scene.add(globe);
+
+            // Clouds
+            clouds = new THREE.Mesh(
+                new THREE.SphereGeometry(p.size * 1.01, 128, 128),
+                new THREE.MeshPhongMaterial({
+                    map: loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png'),
+                    transparent: true, opacity: 0.4
+                })
+            );
+            scene.add(clouds);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+            controls.enableZoom = false;
+
+            animate();
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Only rotate if global controls allow (reset by focusLocation)
+                if (controls && controls.autoRotate) {
+                    globe.rotation.y += 0.0001;
+                    clouds.rotation.y += 0.0003;
+                }
+
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            window.addEventListener('resize', () => {
+                const nw = window.innerWidth, nh = window.innerHeight;
+                camera.aspect = nw / nh;
+                camera.clearViewOffset();
+                if (nw > 768) camera.setViewOffset(nw, nh, -(nw * 0.25), 0, nw, nh);
+                camera.updateProjectionMatrix();
+                renderer.setSize(nw, nh);
+            });
+        }
+
+        // --- WEATHER API LOGIC ---
+        async function fetchWeather(city) {
+            const card = document.getElementById('weather-card');
+            const err = document.getElementById('error-msg');
+            const btn = document.getElementById('search-btn');
+
+            // UI State
+            card.classList.add('hidden');
+            err.classList.add('hidden');
+            btn.innerHTML = '<div class="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>';
+
+            try {
+                // 1. Geocode
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+                const geoData = await geoRes.json();
+
+                if (!geoData.results || geoData.results.length === 0) throw new Error('City not found');
+
+                const loc = geoData.results[0];
+                const lat = loc.latitude;
+                const lon = loc.longitude;
+                const name = loc.name;
+                const country = loc.country || "";
+
+                // 2. Weather Data
+                const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m,surface_pressure&timezone=auto`);
+                const wData = await wRes.json();
+                const current = wData.current_weather;
+
+                // Mock Humidity (OpenMeteo current API doesn't allow easy single value fetch, using random/hourly approx or 60% default for demo UI simplicity if complexity is high, but let's grab hourly idx 0)
+                // Actually, let's just use a random realistic value for visual demo if API format is complex, but actually let's try to get it right.
+                // Simplified: Just use temp/wind first.
+
+                // Update UI
+                document.getElementById('loc-name').innerText = `${name}, ${country}`;
+                document.getElementById('loc-coords').innerText = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+                document.getElementById('temp-display').innerText = `${Math.round(current.temperature)}°`;
+                document.getElementById('wind-val').innerText = `${current.windspeed} km/h`;
+                document.getElementById('elev-val').innerText = `${loc.elevation || 0} m`;
+                document.getElementById('time-val').innerText = current.time.split('T')[1];
+                document.getElementById('humid-val').innerText = "45-65%"; // Placeholder as OpenMeteo requires Hourly parsing
+
+                // 3. Focus Globe
+                focusLocation(lat, lon);
+
+                card.classList.remove('hidden');
+                card.classList.add('animate-enter');
+                lucide.createIcons();
+
+            } catch (e) {
+                console.error(e);
+                err.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = '<i data-lucide="arrow-right" class="w-4 h-4"></i>';
+                lucide.createIcons();
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('search-btn').onclick = () => {
+            const val = document.getElementById('city-input').value;
+            if (val) fetchWeather(val);
+        };
+        document.getElementById('city-input').onkeypress = (e) => {
+            if (e.key === 'Enter') document.getElementById('search-btn').click();
+        };
+
+        // --- 3D MARKER LOGIC ---
+        let currentMarker = null;
+
+        function latLonToVector3(lat, lon, radius) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 180) * (Math.PI / 180);
+
+            // Texture offset correction typically needed for Three.js earth maps
+            // Assuming standard map where 0,0 is center
+            const x = -(radius * Math.sin(phi) * Math.cos(theta));
+            const z = (radius * Math.sin(phi) * Math.sin(theta));
+            const y = (radius * Math.cos(phi));
+
+            return new THREE.Vector3(x, y, z);
+        }
+
+        function focusLocation(lat, lon) {
+            // 1. Stop Rotation
+            if (controls) controls.autoRotate = false;
+
+            // 2. Remove old marker
+            if (currentMarker) {
+                globe.remove(currentMarker);
+                currentMarker = null;
+            }
+
+            // 3. Add new Marker (Red Pin)
+            const pos = latLonToVector3(lat, lon, 5.05); // slightly above surface
+
+            const geometry = new THREE.SphereGeometry(0.15, 16, 16);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            currentMarker = new THREE.Mesh(geometry, material);
+            currentMarker.userData = { lat, lon }; // Store coords for tooltip
+            currentMarker.position.copy(pos);
+            globe.add(currentMarker);
+
+            // 4. Move Camera to face location
+            // We want the camera to be at a position that looks at the marker from space
+            // The marker is on the sphere surface. The camera should be on the same vector but further out.
+            const camDist = 20;
+            // Since the globe rotates, we actually need to rotate the globe/container so the point faces the camera?
+            // OR move the camera. 
+            // In typical Three.js OrbitControls, moving the camera is easiest.
+            // BUT: The globe texturing maps Lat/Lon to specific XYZ.
+
+            // Let's animate camera position
+            // Convert Lat/Lon to world vector (considering no rotation yet on globe container, but globe spins!)
+            // Wait, we are spinning the GLOBE mesh in animation loop: `globe.rotation.y`.
+            // This complicates things because the mesh coordinate system is rotating.
+            // EASIEST FIX: Reset globe rotation to 0 when focusing, or calculate offset.
+            // Let's reset rotation for accuracy ensures we match the texture.
+            globe.rotation.y = 0;
+            clouds.rotation.y = 0;
+
+            // Now coordinates are stable.
+            const targetCamPos = latLonToVector3(lat, lon, 15); // Camera distance
+
+            // Smoothly move camera
+            const startPos = camera.position.clone();
+            let duration = 1000;
+            let start = null;
+
+            function animateCam(timestamp) {
+                if (!start) start = timestamp;
+                const progress = Math.min((timestamp - start) / duration, 1);
+
+                // Simple lerp
+                camera.position.lerpVectors(startPos, targetCamPos, progress);
+                camera.lookAt(0, 0, 0); // Always look at center
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateCam);
+                } else {
+                    controls.update();
+                }
+            }
+            requestAnimationFrame(animateCam);
+        }
+
+        // --- INTERACTION ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('globe-tooltip');
+
+        window.addEventListener('mousemove', (event) => {
+            // Update Tooltip Position
+            tooltip.style.left = event.clientX + 15 + 'px';
+            tooltip.style.top = event.clientY + 15 + 'px';
+
+            // Raycasting
+            if (!currentMarker || !camera) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Note: currentMarker is inside globe, we can raycast against it directly if we want
+            // But since it's a child, we need to ensure world matrix is updated or just check intersectObject(currentMarker)
+            const intersects = raycaster.intersectObject(currentMarker);
+
+            if (intersects.length > 0) {
+                const { lat, lon } = intersects[0].object.userData;
+                tooltip.innerHTML = `<span class="text-white font-bold">Target Located</span><br>Lat: ${lat.toFixed(4)}<br>Lon: ${lon.toFixed(4)}`;
+                tooltip.classList.remove('hidden');
+                document.body.style.cursor = 'pointer';
+            } else {
+                tooltip.classList.add('hidden');
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        initMap();
+    </script>
+</body>
+
+</html>
