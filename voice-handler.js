@@ -8,6 +8,18 @@ class VoiceHandler {
         this.enabled = localStorage.getItem('galactic_voice_enabled') === 'true';
         this.synth = window.speechSynthesis;
         this.currentUtterance = null;
+        this.voices = [];
+
+        console.log("VoiceHandler: Initialized. Voice enabled:", this.enabled);
+
+        // Load voices asynchronously
+        if (this.synth) {
+            this.synth.onvoiceschanged = () => {
+                this.voices = this.synth.getVoices();
+                console.log("VoiceHandler: Voices loaded.", this.voices.length, "voices available.");
+            };
+            this.voices = this.synth.getVoices();
+        }
     }
 
     /**
@@ -17,9 +29,17 @@ class VoiceHandler {
     toggle() {
         this.enabled = !this.enabled;
         localStorage.setItem('galactic_voice_enabled', this.enabled);
-        if (!this.enabled && this.synth.speaking) {
+        console.log("VoiceHandler: Toggled voice. New state:", this.enabled);
+
+        if (!this.enabled && this.synth && this.synth.speaking) {
             this.synth.cancel();
         }
+
+        // Test speech when enabling
+        if (this.enabled) {
+            this.speak("Voice assistance enabled", true);
+        }
+
         return this.enabled;
     }
 
@@ -29,29 +49,41 @@ class VoiceHandler {
      * @param {boolean} force - Whether to speak even if global voice is disabled
      */
     speak(text, force = false) {
-        if (!this.synth) return;
+        if (!this.synth) {
+            console.error("VoiceHandler: SpeechSynthesis not supported in this browser.");
+            return;
+        }
         if (!this.enabled && !force) return;
 
-        // Stop any current speech
-        this.synth.cancel();
+        console.log("VoiceHandler: Speaking text:", text.substring(0, 50) + "...");
 
-        // Strip HTML if present
-        const cleanText = text.replace(/<[^>]*>?/gm, '');
+        try {
+            // Stop any current speech
+            this.synth.cancel();
 
-        const utterance = new SpeechSynthesisUtterance(cleanText);
+            // Strip HTML/Markdown if present
+            const cleanText = text.replace(/<[^>]*>?/gm, '').replace(/\*+/g, '');
 
-        // Find a nice voice (optional enhancement)
-        const voices = this.synth.getVoices();
-        // Prefer a natural sounding one if available
-        const preferredVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Natural')) || voices[0];
-        if (preferredVoice) utterance.voice = preferredVoice;
+            const utterance = new SpeechSynthesisUtterance(cleanText);
 
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
+            // Find a nice voice
+            if (this.voices.length === 0) this.voices = this.synth.getVoices();
+            const preferredVoice = this.voices.find(v => v.name.includes('Google') || v.name.includes('Natural')) || this.voices[0];
+            if (preferredVoice) utterance.voice = preferredVoice;
 
-        this.currentUtterance = utterance;
-        this.synth.speak(utterance);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            utterance.onerror = (event) => {
+                console.error("VoiceHandler: SpeechSynthesis error", event);
+            };
+
+            this.currentUtterance = utterance;
+            this.synth.speak(utterance);
+        } catch (err) {
+            console.error("VoiceHandler: Error during speak", err);
+        }
     }
 
     /**
@@ -60,7 +92,9 @@ class VoiceHandler {
      */
     updateToggleUI(btn) {
         if (!btn) return;
+        console.log("VoiceHandler: Updating Toggle UI. Enabled:", this.enabled);
         const icon = btn.querySelector('i');
+
         if (this.enabled) {
             btn.classList.add('bg-blue-500/20', 'border-blue-500/50');
             btn.classList.remove('bg-white/5', 'border-white/10');
@@ -70,7 +104,12 @@ class VoiceHandler {
             btn.classList.add('bg-white/5', 'border-white/10');
             if (icon) icon.setAttribute('data-lucide', 'volume-x');
         }
-        if (window.lucide) window.lucide.createIcons();
+
+        // Use a safe check for lucide
+        const lucideInstance = window.lucide || (typeof lucide !== 'undefined' ? lucide : null);
+        if (lucideInstance && lucideInstance.createIcons) {
+            lucideInstance.createIcons();
+        }
     }
 }
 
