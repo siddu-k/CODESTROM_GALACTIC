@@ -702,7 +702,10 @@
 
         window.addEventListener('click', onMouseClick);
 
-        // onMouseClick moved to bottom logic
+        // FOLLOW CAMERA STATE
+        let followTarget = null;  // The mesh to follow
+        let followDistance = 30;  // How far the camera stays from the target
+        let followOffset = new THREE.Vector3(); // Camera offset from target
 
         const infoPanel = document.getElementById('info-panel');
         function showInfo(p) {
@@ -724,9 +727,11 @@
         }
 
         function resetCamera() {
+            followTarget = null; // Stop following
             camera.position.set(0, 100, 250);
             controls.target.set(0, 0, 0);
             hideInfo();
+            document.getElementById('planet-selector').value = '';
         }
 
         // ANIMATION LOOP
@@ -803,6 +808,19 @@
                 asteroidInstanced.rotation.y += 0.001;
 
                 sun.rotation.y += 0.002;
+            }
+
+            // FOLLOW TARGET CAMERA
+            if (followTarget && !isTransitioning) {
+                const targetWorldPos = new THREE.Vector3();
+                followTarget.getWorldPosition(targetWorldPos);
+
+                // Smoothly move controls target to planet position
+                controls.target.lerp(targetWorldPos, 0.05);
+
+                // Smoothly move camera to maintain offset from planet
+                const desiredCamPos = targetWorldPos.clone().add(followOffset);
+                camera.position.lerp(desiredCamPos, 0.05);
             }
 
             controls.update();
@@ -1033,15 +1051,19 @@ Provide your response:`;
                     // Update Context
                     currentPlanetContext = `The User has selected ${name} (${type}). Focus answers on this object.`;
 
-                    // Reset history on new selection? No, keep history but shift context.
-                    // Ideally we push a system event to history, but for now the injected system content handles it.
+                    // Set follow target
+                    followTarget = obj;
+                    if (name === "The Sun") {
+                        followDistance = 100;
+                    } else if (name.includes("Jupiter") || name.includes("Saturn")) {
+                        followDistance = 50;
+                    } else {
+                        followDistance = 30;
+                    }
+                    followOffset = new THREE.Vector3(followDistance, followDistance * 0.5, followDistance);
 
                     toggleChat(true);
-
-                    // UX: Don't auto-analyze. Wait for user input.
-                    // Context is set in 'currentPlanetContext' variable.
-
-                    addMessage("System", `Target Locked: **${name}**. Ready for queries.`);
+                    addMessage("System", `Target Locked: **${name}**. Camera following.`);
                 }
             }
         }
@@ -1071,19 +1093,22 @@ Provide your response:`;
             }
 
             if (targetObj && pData) {
-                // Determine target camera position based on object
-                const targetPos = new THREE.Vector3();
-                targetObj.getWorldPosition(targetPos);
+                // Set follow target for continuous tracking
+                followTarget = targetObj;
 
-                let distance = 30; // Default zoom distance
+                let distance = 30;
                 if (selectedName === "The Sun") distance = 100;
                 else if (selectedName === "Jupiter" || selectedName === "Saturn") distance = 50;
 
-                // Animate camera to object
-                const currentCamPos = camera.position.clone();
-                const targetCamPos = targetPos.clone().add(new THREE.Vector3(distance, distance * 0.5, distance));
+                followDistance = distance;
+                followOffset = new THREE.Vector3(distance, distance * 0.5, distance);
 
-                // Simple Lerp animation for smooth focus
+                // Initial snap to get close quickly
+                const targetPos = new THREE.Vector3();
+                targetObj.getWorldPosition(targetPos);
+                const targetCamPos = targetPos.clone().add(followOffset);
+                const currentCamPos = camera.position.clone();
+
                 let lerpFactor = 0;
                 const focusAnim = setInterval(() => {
                     lerpFactor += 0.05;
@@ -1096,7 +1121,7 @@ Provide your response:`;
 
                 // Update Gemini Context
                 currentPlanetContext = `The User has selected ${selectedName} (${type}). Focus answers on this object.`;
-                addMessage("System", `Target Locked: **${selectedName}**. Ready for queries.`);
+                addMessage("System", `Target Locked: **${selectedName}**. Camera following.`);
 
                 // Show Sidebar
                 toggleChat(true);
